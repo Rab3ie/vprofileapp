@@ -1,0 +1,54 @@
+name: Build and Push to Harbor
+
+on:
+  push:
+    branches:
+      - local
+
+jobs:
+  build-and-push:
+    runs-on: self-hosted  # Use your self-hosted runner to reach the local Harbor IP
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Harbor Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.HARBOR_HOST }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+      ### app ########
+      - name: Build and Push app image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Docker-files/app
+          push: true
+          tags: |
+            ${{ secrets.HARBOR_HOST }}/${{ secrets.HARBOR_PROJECT }}/my-app:latest
+            ${{ secrets.HARBOR_HOST }}/${{ secrets.HARBOR_PROJECT }}/my-app:${{ github.sha }}
+      ### db ########
+      - name: Build and Push db Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Docker-files/db
+          push: true
+          tags: |
+            ${{ secrets.HARBOR_HOST }}/${{ secrets.HARBOR_PROJECT }}/my-app:latest
+            ${{ secrets.HARBOR_HOST }}/${{ secrets.HARBOR_PROJECT }}/my-app:${{ github.sha }}
+      ### web ########
+      - name: Build and Push web Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Docker-files/web
+          push: true
+          tags: |
+            ${{ secrets.HARBOR_HOST }}/${{ secrets.HARBOR_PROJECT }}/my-app:latest
+            ${{ secrets.HARBOR_HOST }}/${{ secrets.HARBOR_PROJECT }}/my-app:${{ github.sha }}
